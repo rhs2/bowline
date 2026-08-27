@@ -179,9 +179,16 @@ jobs:
       - name: nothing published that should not be
         run: ./scripts/leak_scan.sh
       - name: full history, in case something was committed and later removed
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The tool rather than gitleaks-action: the action always tries to upload a
+        # SARIF file that it only writes when it finds something, so a clean scan
+        # failed the job on a missing artifact. `git log -p` covers every commit,
+        # which a working tree scan cannot.
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo \
+            zricethezav/gitleaks:v8.30.0 detect \
+              --source=/repo \
+              --config=/repo/.gitleaks.toml \
+              --redact --no-banner --verbose
 
   security:
     name: dependency audit
@@ -255,7 +262,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: scan the image for known vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: bowline/${{ matrix.name }}:ci
           severity: HIGH,CRITICAL

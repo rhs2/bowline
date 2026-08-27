@@ -1,6 +1,9 @@
 # Runtime dependencies for the analytics service. Every version is pinned;
 # bump deliberately and re-run the test suite.
-fastapi==0.115.12
+fastapi==0.141.1
+# starlette arrives through fastapi; pinned explicitly so the advisories reported
+# against 0.46.2 (PYSEC-2026-161, 248 and 249) cannot return unnoticed
+starlette==1.6.0
 uvicorn[standard]==0.34.2
 pydantic==2.11.4
 pydantic-settings==2.9.1

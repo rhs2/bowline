@@ -51,6 +51,7 @@ paths = [
 ]
 regexes = [
   '''X-Internal-Token: dev-internal-token-change-me''',
-  '''postgres://bowline_(app|ro|notify):bowline_\1_dev@''',
+  # no backreference: gitleaks uses Go's RE2, which does not support them
+  '''postgres://bowline_[a-z]+:bowline_[a-z]+_dev@''',
   '''minioadmin''',
 ]
