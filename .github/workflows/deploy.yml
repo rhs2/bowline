@@ -28,7 +28,7 @@ jobs:
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: check the deploy role is configured
         run: |
           if [ -z "${{ secrets.AWS_DEPLOY_ROLE_ARN }}" ]; then
@@ -71,7 +71,7 @@ jobs:
       run:
         working-directory: infra/terraform/environments/${{ github.event.inputs.environment || 'prod' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
