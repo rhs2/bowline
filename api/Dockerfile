@@ -18,10 +18,14 @@ ENV CARGO_TERM_COLOR=always \
 # Dependency layer: manifests plus stand-in sources, so every crates.io dependency
 # compiles into a layer that editing the service sources does not invalidate.
 COPY api/Cargo.toml api/Cargo.lock ./
+# One stub per [[bin]] target in Cargo.toml. Adding a binary without adding it
+# here breaks this layer with "can't find bin", which is what happened when
+# backfill-documents was introduced.
 RUN mkdir -p src/bin \
  && printf 'fn main() {}\n' > src/main.rs \
  && printf 'fn main() {}\n' > src/bin/migrate.rs \
  && printf 'fn main() {}\n' > src/bin/seed.rs \
+ && printf 'fn main() {}\n' > src/bin/backfill_documents.rs \
  && : > src/lib.rs \
  && cargo build --release --locked --bins \
  && rm -rf src

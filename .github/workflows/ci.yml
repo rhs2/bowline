@@ -240,6 +240,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [api, web, billing, analytics, tools]
     strategy:
+      # One image failing should not hide the state of the other five.
+      fail-fast: false
       matrix:
         include:
           - { name: api,       context: .,         file: api/Dockerfile,       target: "" }
