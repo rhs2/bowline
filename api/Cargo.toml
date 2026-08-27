@@ -44,7 +44,7 @@ jsonwebtoken = "9.3.1"
 rand = "0.8.8"
 sha2 = "0.10.9"
 hex = "0.4.3"
-validator = { version = "0.20.0", features = ["derive"] }
+validator = { version = "0.21.0", features = ["derive"] }
 thiserror = "2.0.20"
 anyhow = "1.0.104"
 tracing = "0.1.44"
