@@ -1,26 +1,72 @@
+# Dependency updates.
+#
+# Eight ecosystems on a weekly schedule opened twenty-three pull requests at once
+# on the first run. The settings below keep the signal without the flood: updates
+# are grouped into one pull request per ecosystem, only a few can be open at a
+# time, and patch-level bumps of stable tooling are left to ride along with the
+# next grouped update rather than each getting its own branch.
 version: 2
 updates:
   - package-ecosystem: cargo
     directory: /api
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    groups:
+      rust:
+        patterns: ["*"]
+
   - package-ecosystem: npm
     directory: /web
     schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    groups:
+      javascript:
+        patterns: ["*"]
+
   - package-ecosystem: maven
     directory: /billing
     schedule: { interval: weekly }
+    open-pull-requests-limit: 2
+    groups:
+      java:
+        patterns: ["*"]
+
   - package-ecosystem: pip
     directory: /analytics
     schedule: { interval: weekly }
+    open-pull-requests-limit: 2
+    groups:
+      python:
+        patterns: ["*"]
+
   - package-ecosystem: gomod
     directory: /tools
     schedule: { interval: weekly }
+    open-pull-requests-limit: 2
+    groups:
+      go:
+        patterns: ["*"]
+
   - package-ecosystem: terraform
     directory: /infra/terraform
-    schedule: { interval: weekly }
-  - package-ecosystem: docker
-    directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    groups:
+      terraform:
+        patterns: ["*"]
+
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    groups:
+      docker:
+        patterns: ["*"]

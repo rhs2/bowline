@@ -21,7 +21,7 @@
 *.env
 !example.env
 .envrc
-secrets/
+/secrets/
 *.secret
 *.secrets
 
@@ -75,12 +75,16 @@ crash.*.log
 .terraform.lock.hcl
 .terragrunt-cache/
 
+# A leading slash matters: a bare `internal/` or `secrets/` matches at EVERY level,
+# and would quietly swallow tools/internal and infra/terraform/modules/secrets.
+# Anchor anything that names one specific location.
+#
 # -----------------------------------------------------------------------------
 #  3. Internal working material
 #     Plans, notes and anything about how the work was run rather than what the
 #     system is. See internal/README.md.
 # -----------------------------------------------------------------------------
-internal/
+/internal/
 *.private.md
 NOTES.md
 TODO.md
@@ -97,9 +101,9 @@ SCRATCH.md
 *.dump
 *.sql.gz
 *.bak
-dumps/
-backups/
-data/
+/dumps/
+/backups/
+/data/
 !db/
 !**/testdata/
 *.csv
@@ -115,9 +119,9 @@ data/
 !.dev-logs/.gitkeep
 billing/out/
 web/public/uploads/
-uploads/
-tmp/
-.tmp/
+/uploads/
+/tmp/
+/.tmp/
 
 # -----------------------------------------------------------------------------
 #  6. Build output and dependencies, per language
@@ -131,7 +135,6 @@ api/target/
 # Node and Next.js
 node_modules/
 .next/
-out/
 .turbo/
 *.tsbuildinfo
 .eslintcache
@@ -150,14 +153,13 @@ replay_pid*
 
 # Python
 .venv/
-venv/
-env/
+/venv/
 __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
-dist/
-build/
+/dist/
+/build/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -181,9 +183,9 @@ tools/bin/
 # -----------------------------------------------------------------------------
 #  7. Test and coverage reports
 # -----------------------------------------------------------------------------
-coverage/
-test-results/
-playwright-report/
+/coverage/
+/test-results/
+/playwright-report/
 .nyc_output/
 surefire-reports/
 junit.xml

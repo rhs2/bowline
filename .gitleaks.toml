@@ -1,0 +1,56 @@
+# gitleaks configuration for Bowline.
+#
+# The repository ships development placeholders on purpose: `.env.example`
+# documents every variable, and the service READMEs show working curl commands so
+# a reader can try an endpoint without reverse engineering the headers. gitleaks
+# flags those, and one field named `s3_key`, as generic secrets.
+#
+# Each entry below is a false positive that was read before it was allowed. Real
+# credentials are caught by scripts/leak_scan.sh, which fails on any address
+# outside the reserved test domains, on real AWS account ids, and on the private
+# terms in scripts/private_patterns.txt.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key"
+regex = '''(?i)(?:key|api|token|secret|client|passwd|password|auth|access)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\||:|<=|=>|:=)(?:'|\"|\s|=|\x60){0,5}([0-9a-z\-_.=]{10,150})(?:['|\"|\n|\r|\s|\x60|;]|$)'''
+keywords = ["key", "api", "token", "secret", "client", "passwd", "password", "auth", "access"]
+
+  [rules.allowlist]
+  regexTarget = "match"
+  regexes = [
+    # the development values documented in .env.example, and nowhere else
+    '''dev-only-change-me''',
+    '''dev-internal-token-change-me''',
+    '''bowline_(app|ro|notify)_dev''',
+    '''minioadmin''',
+    '''Bowline!2026''',
+    # test fixtures, named so in the source
+    '''integration-test-secret''',
+    '''ci-only''',
+    '''ci-internal''',
+    # a field name, not a credential: the object key of an uploaded file
+    '''s3_key''',
+  ]
+
+[allowlist]
+description = "Documented examples and development placeholders"
+paths = [
+  # every value here is a placeholder, and the file exists to document them
+  '''\.env\.example$''',
+  # the curl examples in the service READMEs carry the development token so the
+  # commands can be pasted and run against a local stack
+  '''(billing|analytics|api|web|tools|scripts)/README\.md$''',
+  '''docs/.*\.md$''',
+  # its own patterns would otherwise match
+  '''\.gitleaks\.toml$''',
+  '''scripts/leak_scan\.sh$''',
+]
+regexes = [
+  '''X-Internal-Token: dev-internal-token-change-me''',
+  '''postgres://bowline_(app|ro|notify):bowline_\1_dev@''',
+  '''minioadmin''',
+]

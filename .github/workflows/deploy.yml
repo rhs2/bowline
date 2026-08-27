@@ -1,8 +1,11 @@
 name: deploy
 
+# Manual only. The pipeline is real and complete, but it assumes an AWS account:
+# an OIDC role in AWS_DEPLOY_ROLE_ARN, ECR repositories, and the Terraform state
+# backend. Running it on every push to a repository with none of those configured
+# fails at the first step and says nothing useful. Set the secret, then deploy from
+# the Actions tab, or by removing this comment and restoring the push trigger.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -26,6 +29,13 @@ jobs:
       tag: ${{ steps.meta.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+      - name: check the deploy role is configured
+        run: |
+          if [ -z "${{ secrets.AWS_DEPLOY_ROLE_ARN }}" ]; then
+            echo "::error::AWS_DEPLOY_ROLE_ARN is not set. See infra/README.md for the"
+            echo "::error::OIDC role this workflow assumes and how to create it."
+            exit 1
+          fi
       - id: meta
         run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
       - uses: aws-actions/configure-aws-credentials@v4

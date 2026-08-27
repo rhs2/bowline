@@ -59,6 +59,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # The lockfile is written by npm 11, which resolves the platform specific
+      # optional dependencies differently from the npm 10 that ships with Node 22.
+      # Pin it so `npm ci` sees the same tree the lockfile describes, and so CI
+      # matches web/Dockerfile.
+      - run: npm install -g npm@11.6.2
       - run: npm ci
         working-directory: web
       - run: npm run lint
@@ -193,9 +198,21 @@ jobs:
           go-version-file: tools/go.mod
           cache-dependency-path: tools/go.sum
       - name: cargo audit
+        # Two advisories are recorded in Cargo.lock but are not compiled into
+        # anything. `cargo audit` reads the lockfile, which lists optional
+        # dependencies the build never enables, so both are unreachable here:
+        #   RUSTSEC-2023-0071  rsa, reached only through sqlx-mysql. This service
+        #                      is PostgreSQL only (sqlx has default-features off
+        #                      and just the postgres driver), and the advisory has
+        #                      no fixed release. `cargo tree` shows zero matches.
+        #   RUSTSEC-2026-0235  rkyv, an optional feature of rust_decimal that is
+        #                      not enabled. Also zero matches in the tree.
+        # Everything else, including yanked crates, still fails the build.
         run: |
           cargo install cargo-audit --locked --quiet
-          cargo audit --deny warnings
+          cargo audit --deny warnings \
+            --ignore RUSTSEC-2023-0071 \
+            --ignore RUSTSEC-2026-0235
         working-directory: api
       - name: npm audit
         run: npm audit --audit-level=high
