@@ -25,9 +25,16 @@ RUN ./mvnw -B -q -ntp package -DskipTests
 
 # ---- runtime stage: JRE only, non-root, health checked ----
 FROM eclipse-temurin:17-jre
+# Apply the distribution's security updates. A published base image lags the
+# archive, so it ships with patched packages still outstanding; without this the
+# image scan fails on fixable CVEs that have nothing to do with this code.
 RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/* \
+ # An unused Go helper that ships in the base image and carries Go stdlib
+ # advisories of its own. Nothing in this service runs it.
+ && rm -f /usr/bin/pebble \
  && groupadd --system --gid 10001 billing \
  && useradd --system --uid 10001 --gid billing --home-dir /app --shell /usr/sbin/nologin billing
 

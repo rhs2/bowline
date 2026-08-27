@@ -47,7 +47,11 @@ RUN find src -name '*.rs' -exec touch {} + \
 
 # ---- runtime ----------------------------------------------------------------
 FROM debian:bookworm-slim AS runtime
+# Apply the distribution's security updates. A published base image lags the
+# archive, so it ships with patched packages still outstanding; without this the
+# image scan fails on fixable CVEs that have nothing to do with this code.
 RUN apt-get update \
+ && apt-get upgrade -y \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd --system --gid 10001 bowline \

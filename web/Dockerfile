@@ -32,6 +32,15 @@ RUN mkdir -p public && npm run build
 # ---------------------------------------------------------------------------
 
 FROM node:22-alpine AS runner
+
+# Apply the distribution's security updates. A published base image lags the
+# archive, so it ships with patched packages still outstanding; without this the
+# image scan fails on fixable CVEs that have nothing to do with this code.
+RUN apk upgrade --no-cache \
+ # The standalone server runs on node alone. npm ships its own bundled
+ # dependencies, which carry advisories of their own and are pure attack surface
+ # in an image that never installs anything.
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 
 ENV NODE_ENV=production \

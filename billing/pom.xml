@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.13</version>
+    <version>3.5.16</version>
     <relativePath/>
   </parent>
 
@@ -31,6 +31,11 @@
     <pdfbox.version>3.0.8</pdfbox.version>
     <!-- Overrides of versions the parent manages, pinned here so upgrades are explicit. -->
     <postgresql.version>42.7.13</postgresql.version>
+  
+    <!-- Spring Boot 3.5 manages httpcore5 5.3.6, which carries CVE-2026-54399 and
+         CVE-2026-54428. Override to the fixed line; it arrives transitively through
+         the AWS SDK's Apache client and is not used directly here. -->
+    <httpcore5.version>5.4.3</httpcore5.version>
   </properties>
 
   <dependencyManagement>

@@ -1,6 +1,13 @@
 # Bowline analytics service: FastAPI + scikit-learn, trained at build time.
 FROM python:3.12-slim
 
+# Apply the distribution's security updates. A published base image lags the
+# archive, so it ships with patched packages still outstanding; without this the
+# image scan fails on fixable CVEs that have nothing to do with this code.
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
