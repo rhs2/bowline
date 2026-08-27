@@ -1,0 +1,91 @@
+# Every value comes from the environment (names match .env.example at the repo root).
+server:
+  port: ${BILLING_BIND_PORT:8081}
+  shutdown: graceful
+  error:
+    whitelabel:
+      enabled: false
+    include-message: never
+    include-stacktrace: never
+
+spring:
+  application:
+    name: bowline-billing
+  main:
+    banner-mode: "off"
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  mvc:
+    problemdetails:
+      enabled: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  datasource:
+    # Read-only role. The pool starts lazily, so the service boots even when the
+    # database is unreachable; /readyz reports that instead.
+    url: ${BILLING_DATABASE_URL:jdbc:postgresql://localhost:5432/bowline}
+    username: ${BILLING_DATABASE_USER:bowline_ro}
+    password: ${BILLING_DATABASE_PASSWORD:}
+    hikari:
+      pool-name: billing-ro
+      read-only: true
+      maximum-pool-size: 4
+      minimum-idle: 0
+      connection-timeout: 5000
+      validation-timeout: 1000
+      initialization-fail-timeout: -1
+  sql:
+    init:
+      mode: never
+
+billing:
+  internal-token: ${INTERNAL_SERVICE_TOKEN:}
+  pdf-output: ${BILLING_PDF_OUTPUT:s3}
+  local-output-dir: ${BILLING_LOCAL_OUTPUT_DIR:./out}
+  readiness-timeout: 1s
+  company:
+    name: ${BILLING_COMPANY_NAME:Bowline Logistics}
+    address: ${BILLING_COMPANY_ADDRESS:1 Harbour Way, Port City}
+  s3:
+    endpoint: ${S3_ENDPOINT:}
+    region: ${S3_REGION:us-east-1}
+    bucket: ${S3_BUCKET_PDFS:bowline-pdfs}
+    documents-bucket: ${S3_BUCKET_DOCUMENTS:bowline-documents}
+    access-key-id: ${S3_ACCESS_KEY_ID:}
+    secret-access-key: ${S3_SECRET_ACCESS_KEY:}
+    force-path-style: ${S3_FORCE_PATH_STYLE:0}
+
+# Prometheus scrape endpoint served at /metrics (no token required).
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus
+      path-mapping:
+        prometheus: metrics
+      discovery:
+        enabled: false
+  endpoint:
+    prometheus:
+      enabled: true
+  health:
+    db:
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    root: info
+    com.bowline.billing: info
+    com.zaxxer.hikari: warn
+    org.apache.poi: warn
+  pattern:
+    level: "%5p [%X{request_id:-}]"

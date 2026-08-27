@@ -1,0 +1,117 @@
+# Local development stack. Infrastructure only by default; the application
+# services are built with `--profile app`.
+#
+#   docker compose up -d                 postgres, redis, mailpit, minio
+#   docker compose --profile app up -d   plus api, web, billing, analytics, notify
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["1025:1025", "8025:8025"]   # SMTP, web UI
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - miniodata:/data
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      mc mb -p local/bowline-documents; mc mb -p local/bowline-pdfs; exit 0"
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://bowline_app:bowline_app_dev@postgres:5432/bowline
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      BILLING_URL: http://billing:8081
+      ANALYTICS_URL: http://analytics:8082
+      API_CORS_ORIGINS: http://localhost:3000
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    profiles: ["app"]
+    build: ./web
+    environment:
+      API_INTERNAL_URL: http://api:8080
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+  billing:
+    profiles: ["app"]
+    build: ./billing
+    env_file: .env
+    environment:
+      BILLING_DATABASE_URL: jdbc:postgresql://postgres:5432/bowline
+      S3_ENDPOINT: http://minio:9000
+    ports: ["8081:8081"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  analytics:
+    profiles: ["app"]
+    build: ./analytics
+    env_file: .env
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://bowline_ro:bowline_ro_dev@postgres:5432/bowline
+    ports: ["8082:8082"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  notify:
+    profiles: ["app"]
+    build:
+      context: ./tools
+      target: notify
+    env_file: .env
+    environment:
+      DATABASE_URL_NOTIFY: postgres://bowline_notify:bowline_notify_dev@postgres:5432/bowline
+      SMTP_HOST: mailpit
+    ports: ["9101:9101"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      mailpit: { condition: service_started }
+
+volumes:
+  pgdata:
+  miniodata:

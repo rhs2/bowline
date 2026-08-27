@@ -1,0 +1,15 @@
+# Terraform working files. The repository root ignores state, lock files and
+# .terraform directories; this file adds the variable files, which the
+# terraform.tfvars.example headers promise are never committed. They hold
+# certificate ARNs, hosted zone ids, alarm addresses and account numbers.
+terraform.tfvars
+*.auto.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Saved plans produced by the deploy workflow or a manual run.
+*.tfplan
+
+# Crash logs.
+crash.log
+crash.*.log

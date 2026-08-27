@@ -1,0 +1,14 @@
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = merge(
+      {
+        Project    = "bowline"
+        ManagedBy  = "terraform"
+        Repository = "github.com/rhs2/bowline"
+      },
+      var.tags,
+    )
+  }
+}

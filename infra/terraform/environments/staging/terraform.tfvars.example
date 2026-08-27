@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars (git-ignored) or pass with -var-file.
+# image_tag is normally supplied by the deploy workflow; set it here for a
+# manual plan or a rollback.
+
+aws_region      = "us-east-1"
+image_tag       = "0123456789ab"
+domain_name     = "bowline.example"
+certificate_arn = "arn:aws:acm:us-east-1:000000000000:certificate/00000000-0000-0000-0000-000000000000"
+
+# Optional
+# public_hostname        = "staging.bowline.example"
+# mail_domain            = "staging.bowline.example"
+# mail_from              = "Bowline Staging <no-reply@staging.bowline.example>"
+# route53_zone_id        = "Z0000000000000000000A"
+# dmarc_record           = "v=DMARC1; p=none; rua=mailto:dmarc@bowline.example"
+# alarm_email            = "ops@bowline.example"
+# vpc_cidr               = "10.10.0.0/16"
+# enable_execute_command = true
+# tags                   = { CostCenter = "platform" }

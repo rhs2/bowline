@@ -1,0 +1,9 @@
+target/
+out/
+.idea/
+.vscode/
+*.iml
+*.log
+Dockerfile
+.dockerignore
+README.md

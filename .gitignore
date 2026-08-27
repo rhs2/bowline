@@ -1,0 +1,211 @@
+# =============================================================================
+#  Bowline: what never reaches the repository
+#
+#  Ordered by consequence. The first section is the one that matters: those
+#  entries are the difference between a portfolio repository and an incident.
+#  Everything below it is noise control.
+#
+#  Check your work before pushing:
+#     ./scripts/leak_scan.sh          scan the working tree
+#     git ls-files | ./scripts/leak_scan.sh --stdin   scan only what git tracks
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+#  1. Secrets and real configuration
+#     `.env.example` is the only environment file that ships. It holds documented
+#     placeholders. Anything else with a value in it stays here.
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+!example.env
+.envrc
+secrets/
+*.secret
+*.secrets
+
+# credentials, keys and certificates of every shape
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+id_rsa*
+id_ed25519*
+*.ppk
+*.gpg
+*.asc
+!**/testdata/**/*.pem
+credentials
+credentials.json
+service-account*.json
+gha-creds-*.json
+.aws/
+.gcloud/
+.azure/
+kubeconfig
+*.kubeconfig
+.npmrc
+.pypirc
+.netrc
+
+# the CLI writes its session here when run from a checkout
+.config/bowline/
+
+# -----------------------------------------------------------------------------
+#  2. Infrastructure state
+#     State files contain every resolved value: endpoints, generated passwords,
+#     account ids. A plan file is just as revealing.
+# -----------------------------------------------------------------------------
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+!*.tfvars.example
+*.tfplan
+*.tfplan.*
+.terraform.lock.hcl
+.terragrunt-cache/
+
+# -----------------------------------------------------------------------------
+#  3. Internal working material
+#     Plans, notes and anything about how the work was run rather than what the
+#     system is. See internal/README.md.
+# -----------------------------------------------------------------------------
+internal/
+*.private.md
+NOTES.md
+TODO.md
+SCRATCH.md
+
+# -----------------------------------------------------------------------------
+#  4. Real data
+#     The seeder generates its own fictional company. No dump, export or backup
+#     of anything else belongs in the tree.
+# -----------------------------------------------------------------------------
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+*.bak
+dumps/
+backups/
+data/
+!db/
+!**/testdata/
+*.csv
+*.xlsx
+*.pdf
+!docs/**/*.pdf
+
+# -----------------------------------------------------------------------------
+#  5. Local run output
+# -----------------------------------------------------------------------------
+.dev-logs/
+*.log
+!.dev-logs/.gitkeep
+billing/out/
+web/public/uploads/
+uploads/
+tmp/
+.tmp/
+
+# -----------------------------------------------------------------------------
+#  6. Build output and dependencies, per language
+# -----------------------------------------------------------------------------
+# Rust
+api/target/
+**/target/
+*.rs.bk
+*.pdb
+
+# Node and Next.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+.npm/
+.yarn/
+.pnp.*
+
+# Java and Maven
+billing/target/
+.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!**/gradle/wrapper/*.jar
+hs_err_pid*
+replay_pid*
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# trained model artefacts are rebuilt at image build time
+analytics/models/*.joblib
+analytics/models/*.pkl
+analytics/models/*.onnx
+!analytics/models/README.md
+
+# Go
+tools/bin/
+*.test
+*.out
+!**/testdata/**
+
+# -----------------------------------------------------------------------------
+#  7. Test and coverage reports
+# -----------------------------------------------------------------------------
+coverage/
+test-results/
+playwright-report/
+.nyc_output/
+surefire-reports/
+junit.xml
+
+# -----------------------------------------------------------------------------
+#  8. Editors and operating systems
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# the private term list for scripts/leak_scan.sh, never published
+scripts/private_patterns.txt

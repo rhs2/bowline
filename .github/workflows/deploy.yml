@@ -1,0 +1,116 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        default: prod
+        type: choice
+        options: [staging, prod]
+
+permissions:
+  id-token: write     # OIDC to AWS, no long-lived keys
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  images:
+    name: build and push images
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+      - uses: docker/setup-buildx-action@v3
+      - name: build and push every service
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          build() { # name context dockerfile [target]
+            docker buildx build --push --platform linux/amd64 -f "$3" \
+              ${4:+--target "$4"} \
+              -t "$REGISTRY/bowline/$1:$TAG" -t "$REGISTRY/bowline/$1:latest" "$2"
+          }
+          build api . api/Dockerfile
+          build web web web/Dockerfile
+          build billing billing billing/Dockerfile
+          build analytics analytics analytics/Dockerfile
+          build notify tools tools/Dockerfile notify
+
+  terraform:
+    name: terraform apply (${{ github.event.inputs.environment || 'prod' }})
+    needs: images
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'prod' }}   # protected: requires approval
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/${{ github.event.inputs.environment || 'prod' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -var "image_tag=${{ needs.images.outputs.tag }}" -out=plan.tfplan
+      - run: terraform apply -input=false plan.tfplan
+
+  migrate:
+    name: run migrations
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'prod' }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: one-off ECS task running `migrate` from the api image
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'prod' }}
+        run: |
+          set -euo pipefail
+          CLUSTER="bowline-$ENVIRONMENT"
+          # The task definition family is per environment on purpose. Families are
+          # account-wide, so a shared family would resolve to whichever environment
+          # was applied last, and a staging deploy could migrate production.
+          FAMILY="bowline-migrate-$ENVIRONMENT"
+          NETWORK="$(aws ssm get-parameter --name "/bowline/$ENVIRONMENT/migrate-network" \
+            --query Parameter.Value --output text)"
+
+          TASK_ARN="$(aws ecs run-task --cluster "$CLUSTER" \
+            --task-definition "$FAMILY" --launch-type FARGATE \
+            --network-configuration "$NETWORK" \
+            --query 'tasks[0].taskArn' --output text)"
+          echo "Started $TASK_ARN"
+
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK_ARN"
+
+          read -r EXIT_CODE STOPPED_REASON <<<"$(aws ecs describe-tasks \
+            --cluster "$CLUSTER" --tasks "$TASK_ARN" \
+            --query 'tasks[0].[containers[0].exitCode,stoppedReason]' --output text)"
+          echo "Migration task exit code: $EXIT_CODE ($STOPPED_REASON)"
+
+          # A migration that fails must fail the deploy rather than pass silently.
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::database migration failed, see the bowline-$ENVIRONMENT/migrate log stream"
+            exit 1
+          fi

@@ -1,0 +1,30 @@
+# Normalise line endings so a checkout on Windows does not rewrite every file.
+* text=auto eol=lf
+
+# Keep shell scripts and the Maven wrapper executable and LF, whatever the host.
+*.sh   text eol=lf
+mvnw   text eol=lf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary, never diffed or line-ending converted.
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.joblib binary
+
+# Lockfiles are generated. Marking them keeps GitHub's language statistics honest
+# (this reads as Rust and TypeScript, not JSON) and collapses them in diffs.
+Cargo.lock        linguist-generated=true -diff
+web/package-lock.json linguist-generated=true -diff
+tools/go.sum      linguist-generated=true -diff
+
+# Documentation should not count towards the language breakdown either.
+docs/**           linguist-documentation=true
+*.md              linguist-documentation=true
+
+# Generated or vendored assets are not the author's code.
+web/next-env.d.ts linguist-generated=true

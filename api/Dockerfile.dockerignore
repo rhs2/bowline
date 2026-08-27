@@ -1,0 +1,46 @@
+# Ignore list for the API image. The build context is the repository root
+# (docker build -f api/Dockerfile .), so every pattern is relative to the root.
+# The image needs api/Cargo.toml, api/Cargo.lock, api/src and db/migrations and
+# nothing else.
+#
+# Docker reads the ignore file from the context root, or from
+# <dockerfile>.dockerignore beside the Dockerfile. This is the second form, which
+# is the one that actually applies to `docker build -f api/Dockerfile .`; a plain
+# api/.dockerignore would be ignored entirely for a root-context build.
+
+# other services
+analytics/
+billing/
+tools/
+web/
+infra/
+docs/
+scripts/
+
+# build output and local state
+**/target/
+**/node_modules/
+**/__pycache__/
+**/.venv/
+**/.next/
+**/.pytest_cache/
+**/.ruff_cache/
+
+# version control, CI metadata and editors
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+**/.DS_Store
+*.log
+
+# local secrets: never bake these into an image
+.env
+.env.*
+
+# repository documentation and local orchestration
+*.md
+LICENSE
+Makefile
+docker-compose.yml

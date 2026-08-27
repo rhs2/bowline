@@ -1,0 +1,29 @@
+# Copy to terraform.tfvars (git-ignored) or pass with -var-file.
+# image_tag is normally supplied by the deploy workflow; set it here for a
+# manual plan or a rollback.
+
+aws_region      = "us-east-1"
+image_tag       = "0123456789ab"
+domain_name     = "bowline.example"
+certificate_arn = "arn:aws:acm:us-east-1:000000000000:certificate/00000000-0000-0000-0000-000000000000"
+alarm_email     = "ops@bowline.example"
+
+# Optional
+# public_hostname        = "app.bowline.example"
+# mail_domain            = "bowline.example"
+# mail_from              = "Bowline <no-reply@bowline.example>"
+# route53_zone_id        = "Z0000000000000000000A"
+# dmarc_record           = "v=DMARC1; p=quarantine; rua=mailto:dmarc@bowline.example"
+# vpc_cidr               = "10.20.0.0/16"
+# az_count               = 3
+# db_instance_class      = "db.m7g.large"
+# cache_node_type        = "cache.t4g.small"
+# enable_execute_command = false
+# services = {
+#   api       = { cpu = 1024, memory = 2048, desired_count = 2, min_count = 2, max_count = 6 }
+#   web       = { cpu = 512,  memory = 1024, desired_count = 2, min_count = 2, max_count = 4 }
+#   billing   = { cpu = 1024, memory = 2048, desired_count = 1 }
+#   analytics = { cpu = 1024, memory = 2048, desired_count = 1 }
+#   notify    = { cpu = 256,  memory = 512,  desired_count = 1 }
+# }
+# tags = { CostCenter = "platform" }

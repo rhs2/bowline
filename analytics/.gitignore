@@ -1,0 +1,2 @@
+# Model artefacts are built, never committed (the root .gitignore covers *.joblib).
+models/*.json

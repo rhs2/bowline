@@ -1,0 +1,36 @@
+[project]
+name = "bowline-analytics"
+version = "1.0.0"
+description = "Shipment delay-risk scoring and weekly volume forecasting for Bowline"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "models"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "B",    # bugbear
+  "UP",   # pyupgrade
+  "N",    # pep8 naming
+  "SIM",  # simplify
+  "C4",   # comprehensions
+  "RUF",  # ruff specific
+  "T20",  # no print statements
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["analytics"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+pythonpath = ["."]

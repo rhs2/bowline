@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bowline: Freight Operations and Workforce Management Platform</title>
+<meta name="description" content="A production-grade freight operations and workforce platform: Rust API, Next.js web app, Java billing, Python analytics, Go outbox worker, PostgreSQL with an ltree chain of command and a trigger-guarded double-entry ledger, deployed to AWS with Terraform and GitHub Actions.">
+<meta property="og:title" content="Bowline: Freight Operations and Workforce Management Platform">
+<meta property="og:description" content="One chain of command, one ledger, one audit trail. Six services in five languages, verified end to end.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="sitenav"><a href="index.html" class="active">Project page</a> <a href="https://github.com/rhs2/bowline">Code</a> <a href="https://github.com/rhs2/bowline/blob/main/docs/ARCHITECTURE.md">Architecture</a> <a href="https://github.com/rhs2/bowline/blob/main/docs/DOMAIN.md">Domain model</a> <a href="https://github.com/rhs2/bowline/blob/main/docs/API.md">API</a></nav>
+
+<header class="hero">
+  <h1>Bowline</h1>
+  <p class="tagline">Freight operations and workforce management for a 260-person logistics company, from the CEO to the dock crew: one chain of command, one ledger, one audit trail.</p>
+  <p class="authors"><b>Rakibul Hasan Sium</b> · <a href="https://github.com/rhs2">github.com/rhs2</a></p>
+  <p class="links">
+    <a class="btn" href="https://github.com/rhs2/bowline">Source code</a>
+    <a class="btn" href="https://github.com/rhs2/bowline/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+    <a class="btn" href="https://github.com/rhs2/bowline/blob/main/docs/DOMAIN.md">Domain model</a>
+  </p>
+  <div class="stack">
+    <span>Rust · Axum · SQLx</span><span>TypeScript · Next.js 15</span><span>Java 17 · Spring Boot 3</span><span>Python · FastAPI · scikit-learn</span><span>Go 1.27</span><span>PostgreSQL 16 · ltree</span><span>Redis · S3 · SES</span><span>Terraform · AWS ECS Fargate</span><span>GitHub Actions</span><span>Docker</span>
+  </div>
+</header>
+
+<main>
+<section>
+  <h2>In one paragraph</h2>
+  <p>Bowline is the platform a mid-size freight forwarder runs on. It carries the company hierarchy (seven levels, CEO to ground staff), identity and access, HR (leave, shifts, attendance, documents), freight operations (customers, shipments, legs, tracking events, work orders, inventory), double-entry finance (invoices, payments, expenses, vendor bills, payroll, period close, reports), internal mail with company-wide announcements, a support desk with SLAs, and an append-only audit log. It is the 2026 re-engineering of an internal platform first built in 2022 to 2023 for a freight company: the domain carried over, everything else was rebuilt around a Rust core with the heavy or specialised jobs (PDF rendering, spreadsheets, forecasting, mail delivery) in the language that suits them.</p>
+</section>
+
+<section>
+  <h2>Key numbers</h2>
+  <div class="cards" id="numbers">
+    <div class="card"><div class="num">6 services</div><p>Rust API, Next.js web, Java billing, Python analytics, Go outbox worker and CLI, Terraform infrastructure, each with its own CI job and Docker image.</p></div>
+    <div class="card"><div class="num">43 tables</div><p>Eight versioned migrations: org and identity, HR, operations, finance, communications, audit and outbox, reference data. 52 permissions in 14 roles.</p></div>
+    <div class="card"><div class="num">11 rules</div><p>Database integrity rules proven by a rolled-back SQL test in CI: one CEO, no reporting cycles, subtree cascade, balanced ledger, immutable lines, closed periods, leave overlap, append-only audit.</p></div>
+    <div class="card"><div class="num">260 people</div><p>A seeded company with a full reporting tree, so every permission scope, approval chain and messaging rule can be exercised from real logins.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What makes it more than a CRUD app</h2>
+  <table>
+    <tr><th>Concern</th><th>How Bowline handles it</th></tr>
+    <tr><td>Chain of command</td><td>Each employee's reporting path is a PostgreSQL <code>ltree</code> maintained by triggers. Re-parenting a manager rewrites the whole subtree in one statement; cycles and a second CEO are rejected. "Everyone below me" is a GiST index lookup, and every scoped permission (<code>:self</code>, <code>:subtree</code>, <code>:department</code>, <code>:all</code>) is evaluated against the same path.</td></tr>
+    <tr><td>Money</td><td>Double-entry ledger. A deferred constraint trigger refuses to commit an unbalanced entry, journal lines are immutable (corrections are reversing entries), and posting into a closed fiscal period fails at the database. Invoices, payments, expenses, vendor bills and payroll are all just sources of journal entries.</td></tr>
+    <tr><td>Who can message whom</td><td>A rule table, enforced in the API and reflected in the recipient picker: support desk, manager and reports, same department for everyone; the subtree for managers; the whole company for executives.</td></tr>
+    <tr><td>Approvals</td><td>Leave goes to the direct manager; expenses need manager then finance; invoices above a threshold need finance approval before issue; payroll needs the CFO; closing a period locks it.</td></tr>
+    <tr><td>Authentication</td><td>Argon2id passwords, 15-minute access tokens, rotating refresh tokens with family reuse detection, lockout after failed logins, forced password change on first login. The web app keeps tokens in httpOnly cookies behind a backend-for-frontend proxy.</td></tr>
+    <tr><td>Email delivery</td><td>Transactional outbox: every message writes rows in the same transaction; a Go worker claims them with <code>FOR UPDATE SKIP LOCKED</code>, retries with exponential backoff, and parks failures after eight attempts.</td></tr>
+    <tr><td>Attribution</td><td>Every mutation writes actor, request id and a before/after snapshot to an append-only audit log, queryable by executives and auditors.</td></tr>
+    <tr><td>Operations</td><td>Health and readiness probes, Prometheus metrics, structured logs with request ids, one command for local development, one pipeline to production (OIDC to AWS, ECR, Terraform apply behind a protected environment, migrations as a one-off task).</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Architecture</h2>
+<pre>
+                       +------------------+
+   browser  ---------> |  web  (Next.js)  |  BFF: httpOnly cookies, /api/proxy
+                       +--------+---------+
+                                | HTTPS /api/v1  (JWT bearer)
+                                v
+   bowctl (Go) ------> +------------------+      +--------------------+
+                       |  api  (Rust)     |----->| billing  (Java)    |  invoice PDFs,
+                       |  Axum + SQLx     |      | Spring Boot        |  statements, AR aging xlsx
+                       |  identity, org,  |      +--------------------+
+                       |  hr, ops,        |      +--------------------+
+                       |  finance, comms, |----->| analytics (Python) |  delay risk,
+                       |  audit           |      | FastAPI + sklearn  |  volume forecast
+                       +---+--------+-----+      +--------------------+
+                           |        |
+                 PostgreSQL 16      S3 (documents, PDFs)
+                 (ltree, citext)
+                           ^
+                           |  outbox table, SKIP LOCKED
+                       +---+--------------+
+                       | notify (Go)      |  SES in production, Mailpit locally
+                       +------------------+
+</pre>
+  <p class="muted">The API is the only writer of business data. Billing and analytics read through a read-only database role and are called by the API over HTTP; the notify worker may touch only the outbox table.</p>
+</section>
+
+<section>
+  <h2>Verification</h2>
+  <p>Every number here came from running the system, on PostgreSQL 16 with all six services up. None of it is an estimate.</p>
+  <div class="cards">
+    <div class="card"><div class="num">266</div><p>Automated tests across five languages: 66 TypeScript, 62 Rust (27 unit and 35 integration over the real HTTP surface), 58 Go, 45 Java, 35 Python.</p></div>
+    <div class="card"><div class="num">33 of 33</div><p>Steps of the end-to-end scenario, which drives seven seeded roles through one working day and checks the rules rather than the plumbing.</p></div>
+    <div class="card"><div class="num">126</div><p>API operations across 99 OpenAPI paths, with <code>clippy --all-targets -- -D warnings</code> clean.</p></div>
+    <div class="card"><div class="num">0.00</div><p>The trial balance after seeding 260 employees, 300 shipments, 90 invoices and 180 journal entries, and again after the scenario issues and collects another invoice.</p></div>
+  </div>
+  <p>The scenario is the interesting part, because each step is a rule that could plausibly be got wrong:</p>
+  <table>
+    <tr><th>Step</th><th>What it proves</th></tr>
+    <tr><td>A dock worker announces to the company</td><td>Refused. Only <code>messages:broadcast:company</code> holders may, and the CEO's announcement still reaches that worker's inbox.</td></tr>
+    <tr><td>A dock worker opens a thread with the CFO</td><td>Refused, while a thread with their own manager succeeds. The messaging rules are enforced server side, not just hidden in the recipient picker.</td></tr>
+    <tr><td>A shipment jumps straight to delivered</td><td>409 <code>invalid_transition</code>, while draft to booked to picked_up is accepted.</td></tr>
+    <tr><td>Someone else moves a driver's work order</td><td>Refused. Only the assignee or a manager above them may.</td></tr>
+    <tr><td>An invoice is overpaid</td><td>422. The correct payment posts, and the trial balance still sums to zero.</td></tr>
+    <tr><td>An unbalanced journal entry is posted</td><td>422, surfaced cleanly rather than exploding at commit, because the deferred constraint is checked for one round trip inside the transaction.</td></tr>
+    <tr><td>An entry is posted into a closed period</td><td>Refused at the database, not merely in the API.</td></tr>
+    <tr><td>A dock worker reads the ledger or the audit trail</td><td>403 for both, while the CEO reads the audit rows for the invoice just issued.</td></tr>
+  </table>
+  <p class="muted">Three bugs found by booting the service that no unit test would have caught: two Prometheus recorders fighting over a port, a stack overflow building a 99 route tower stack, and an OpenAPI schema that recursed forever on the self referencing org chart. One authorisation leak found by the integration suite: <code>GET /employees/{id}/reports</code> accepted <code>org:read</code>, which every user holds, so any employee could read anyone's reports along with their contact details.</p>
+</section>
+
+<section>
+  <h2>Run it</h2>
+<pre>
+git clone https://github.com/rhs2/bowline && cd bowline
+cp .env.example .env
+make up && make migrate && make seed
+make api      # http://localhost:8080, Swagger UI at /docs
+make web      # http://localhost:3000, sign in as ceo@bowline.example / Bowline!2026
+make test     # every suite;  make smoke  walks the end-to-end scenario
+</pre>
+</section>
+</main>
+<footer>Bowline is a portfolio project by Rakibul Hasan Sium. The company, people, customers and figures in the seed data are fictional. MIT licensed.</footer>
+</body>
+</html>

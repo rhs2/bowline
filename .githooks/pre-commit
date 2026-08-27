@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Refuse a commit that would publish a secret.
+#
+# Enable once per clone:
+#     git config core.hooksPath .githooks
+#
+# Bypass only when you have read the finding and know it is safe:
+#     git commit --no-verify
+set -uo pipefail
+repo_root=$(git rev-parse --show-toplevel)
+scan="$repo_root/scripts/leak_scan.sh"
+
+[ -x "$scan" ] || exit 0
+
+if ! "$scan" --staged; then
+  echo "Commit refused: the scan above found something that should not be published."
+  echo "Fix it, or bypass with 'git commit --no-verify' if you are certain it is safe."
+  exit 1
+fi
