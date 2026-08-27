@@ -25,7 +25,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <!-- Versions not managed by the Spring Boot parent. -->
-    <openpdf.version>2.0.5</openpdf.version>
+    <openpdf.version>3.0.5</openpdf.version>
     <poi.version>5.4.1</poi.version>
     <awssdk.version>2.54.5</awssdk.version>
     <pdfbox.version>3.0.8</pdfbox.version>
