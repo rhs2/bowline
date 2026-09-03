@@ -4,12 +4,12 @@ fastapi==0.141.1
 # starlette arrives through fastapi; pinned explicitly so the advisories reported
 # against 0.46.2 (PYSEC-2026-161, 248 and 249) cannot return unnoticed
 starlette==1.6.0
-uvicorn[standard]==0.34.2
-pydantic==2.11.4
-pydantic-settings==2.9.1
-numpy==2.2.5
-pandas==2.2.3
-scikit-learn==1.6.1
-joblib==1.4.2
-prometheus-client==0.21.1
-psycopg[binary]==3.2.6
+uvicorn[standard]==0.52.4
+pydantic==2.13.5
+pydantic-settings==2.15.0
+numpy==2.5.2
+pandas==3.0.5
+scikit-learn==1.9.0
+joblib==1.6.0
+prometheus-client==0.26.0
+psycopg[binary]==3.3.4
