@@ -3,7 +3,7 @@ module github.com/rhs2/bowline/tools
 go 1.27
 
 require (
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/prometheus/client_golang v1.24.1
 )
 
